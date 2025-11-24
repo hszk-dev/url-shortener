@@ -74,8 +74,21 @@ It focuses on high code quality, robust system design, and clear documentation s
 
 ### Pull Requests (PRs)
 
-  * Must be in **English**.
-  * Focus on **Motivation (Why)** and **Verification (How to test)**.
+**Template Usage:**
+  * Use `.github/pull_request_template.md` for all PRs
+  * Must be in **English**
+  * **Required Sections:**
+    - **Summary:** Brief overview of changes
+    - **Motivation & Context (Why?):** Explain the problem being solved and why this change is necessary
+    - **Implementation Details (How?):** High-level technical approach and key architectural decisions
+    - **How to Test:** Step-by-step verification instructions
+    - **Checklist:** Complete all items before requesting review
+
+**Quality Standards:**
+  * Focus on **WHY** (motivation) over **WHAT** (code changes)
+  * Include concrete testing steps, not just "tested locally"
+  * Highlight trade-offs and technical decisions made
+  * Self-review before requesting review from others
 
 -----
 
@@ -113,6 +126,7 @@ It focuses on high code quality, robust system design, and clear documentation s
 
 ## 📁 Project Structure Pattern
 
+  * `.github/`: PR templates and GitHub Actions workflows.
   * `cmd/`: Main applications.
   * `internal/`: Private application and library code (Service, Repository).
   * `api/`: OpenAPI/Swagger definitions.
