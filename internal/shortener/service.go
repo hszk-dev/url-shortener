@@ -2,7 +2,12 @@ package shortener
 
 import (
 	"context"
+	"errors"
 	"fmt"
+)
+
+var (
+	ErrInvalidShortCode = errors.New("invalid short code")
 )
 
 type Service struct {
@@ -32,13 +37,13 @@ func (s *Service) Redirect(ctx context.Context, shortCode string) (string, error
 	// 1. Decode Base62 to ID
 	id, err := Decode(shortCode)
 	if err != nil {
-		return "", fmt.Errorf("invalid short code: %w", err)
+		return "", ErrInvalidShortCode
 	}
 
 	// 2. Get Original URL from Repo (Redis/DB)
 	originalURL, err := s.repo.Get(ctx, id)
 	if err != nil {
-		return "", fmt.Errorf("failed to get original url: %w", err)
+		return "", err // Pass through ErrNotFound or other errors
 	}
 
 	return originalURL, nil

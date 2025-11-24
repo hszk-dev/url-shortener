@@ -3,9 +3,11 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 
 	"github.com/gorilla/mux"
@@ -17,6 +19,7 @@ import (
 
 type App struct {
 	Service *shortener.Service
+	BaseURL string
 }
 
 type ShortenRequest struct {
@@ -35,6 +38,18 @@ func (a *App) ShortenHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Validate URL
+	if req.URL == "" {
+		http.Error(w, "URL is required", http.StatusBadRequest)
+		return
+	}
+
+	parsedURL, err := url.ParseRequestURI(req.URL)
+	if err != nil || (parsedURL.Scheme != "http" && parsedURL.Scheme != "https") {
+		http.Error(w, "Invalid URL format. Must be http:// or https://", http.StatusBadRequest)
+		return
+	}
+
 	shortCode, err := a.Service.Shorten(r.Context(), req.URL)
 	if err != nil {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
@@ -44,7 +59,7 @@ func (a *App) ShortenHandler(w http.ResponseWriter, r *http.Request) {
 
 	resp := ShortenResponse{
 		ShortCode: shortCode,
-		ShortURL:  fmt.Sprintf("http://localhost:8080/%s", shortCode),
+		ShortURL:  fmt.Sprintf("%s/%s", a.BaseURL, shortCode),
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -57,7 +72,11 @@ func (a *App) RedirectHandler(w http.ResponseWriter, r *http.Request) {
 
 	originalURL, err := a.Service.Redirect(r.Context(), shortCode)
 	if err != nil {
-		if err == shortener.ErrNotFound {
+		if errors.Is(err, shortener.ErrInvalidShortCode) {
+			http.Error(w, "Invalid short code", http.StatusBadRequest)
+			return
+		}
+		if errors.Is(err, shortener.ErrNotFound) {
 			http.Error(w, "URL not found", http.StatusNotFound)
 			return
 		}
@@ -96,10 +115,19 @@ func main() {
 	})
 	defer redisClient.Close()
 
+	// Get base URL for short URLs
+	baseURL := os.Getenv("BASE_URL")
+	if baseURL == "" {
+		baseURL = "http://localhost:8080"
+	}
+
 	// Initialize Service
 	repo := shortener.NewPostgresRedisRepository(db, redisClient)
 	service := shortener.NewService(repo)
-	app := &App{Service: service}
+	app := &App{
+		Service: service,
+		BaseURL: baseURL,
+	}
 
 	// Setup Router
 	r := mux.NewRouter()
