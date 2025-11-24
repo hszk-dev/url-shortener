@@ -1,5 +1,7 @@
 # High-Performance URL Shortener Service
 
+![CI](https://github.com/hszk-dev/url-shortener/actions/workflows/ci.yml/badge.svg)
+
 A scalable, production-ready URL shortening service built with Go, PostgreSQL, and Redis. Designed to handle high read throughput with low latency redirection, demonstrating modern system design principles.
 
 ## 🛠 Tech Stack

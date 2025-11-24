@@ -13,34 +13,6 @@ import (
 	"github.com/suzukikyou/url-shortener/internal/shortener"
 )
 
-// MockRepository implements shortener.Repository for HTTP handler testing
-type MockRepository struct {
-	SaveFunc  func(ctx context.Context, originalURL string) (uint64, error)
-	GetFunc   func(ctx context.Context, id uint64) (string, error)
-	CloseFunc func() error
-}
-
-func (m *MockRepository) Save(ctx context.Context, originalURL string) (uint64, error) {
-	if m.SaveFunc != nil {
-		return m.SaveFunc(ctx, originalURL)
-	}
-	return 0, nil
-}
-
-func (m *MockRepository) Get(ctx context.Context, id uint64) (string, error) {
-	if m.GetFunc != nil {
-		return m.GetFunc(ctx, id)
-	}
-	return "", nil
-}
-
-func (m *MockRepository) Close() error {
-	if m.CloseFunc != nil {
-		return m.CloseFunc()
-	}
-	return nil
-}
-
 func TestShortenHandler(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -156,7 +128,7 @@ func TestShortenHandler(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Setup mock repository
-			mockRepo := &MockRepository{
+			mockRepo := &shortener.MockRepository{
 				SaveFunc: func(ctx context.Context, url string) (uint64, error) {
 					return tt.mockSaveID, tt.mockSaveError
 				},
@@ -290,7 +262,7 @@ func TestRedirectHandler(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Setup mock repository
-			mockRepo := &MockRepository{
+			mockRepo := &shortener.MockRepository{
 				GetFunc: func(ctx context.Context, id uint64) (string, error) {
 					return tt.mockURL, tt.mockError
 				},
@@ -338,7 +310,7 @@ func TestRedirectHandler(t *testing.T) {
 
 func TestRedirectHandler_HTTP302(t *testing.T) {
 	// Specific test to verify we use 302 Found (not 301 Moved Permanently)
-	mockRepo := &MockRepository{
+	mockRepo := &shortener.MockRepository{
 		GetFunc: func(ctx context.Context, id uint64) (string, error) {
 			return "https://www.google.com", nil
 		},
@@ -368,7 +340,7 @@ func TestRedirectHandler_HTTP302(t *testing.T) {
 
 func TestShortenHandler_ContentType(t *testing.T) {
 	// Test that response has correct Content-Type header
-	mockRepo := &MockRepository{
+	mockRepo := &shortener.MockRepository{
 		SaveFunc: func(ctx context.Context, url string) (uint64, error) {
 			return 1, nil
 		},
