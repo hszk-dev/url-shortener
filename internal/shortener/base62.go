@@ -34,6 +34,10 @@ func Encode(id uint64) string {
 
 // Decode converts a Base62 string back to a unique integer ID.
 func Decode(encoded string) (uint64, error) {
+	if encoded == "" {
+		return 0, fmt.Errorf("cannot decode empty string")
+	}
+
 	var id uint64
 
 	for i, char := range encoded {

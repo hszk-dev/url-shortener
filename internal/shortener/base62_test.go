@@ -64,13 +64,11 @@ func TestDecodeInvalid(t *testing.T) {
 }
 
 // TestDecodeEmpty tests the edge case of empty string input.
-// Note: Current implementation returns (0, nil) for empty string.
-// This may be considered a bug as empty string is not a valid Base62 code,
-// but we document the current behavior here.
+// Empty string is not a valid Base62 code and should return an error.
 func TestDecodeEmpty(t *testing.T) {
 	result, err := Decode("")
-	if err != nil {
-		t.Errorf("Decode(\"\") returned error: %v (current implementation accepts empty string)", err)
+	if err == nil {
+		t.Error("Decode(\"\") should return error for empty string")
 	}
 	if result != 0 {
 		t.Errorf("Decode(\"\") = %d; want 0", result)

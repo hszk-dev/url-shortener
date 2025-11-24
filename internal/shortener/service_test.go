@@ -158,9 +158,9 @@ func TestService_Redirect(t *testing.T) {
 			name:      "empty short code",
 			shortCode: "",
 			storedURL: "",
-			getError:  ErrNotFound,
+			getError:  nil,
 			wantURL:   "",
-			wantErr:   ErrNotFound,
+			wantErr:   ErrInvalidShortCode,
 		},
 		{
 			name:      "very long short code",
