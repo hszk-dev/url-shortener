@@ -152,13 +152,22 @@ go test -v -race -coverprofile=coverage.out ./...
 go tool cover -html=coverage.out
 ```
 
-**Note:** Current tests use mocks (sqlmock, miniredis) for database and cache dependencies. This provides fast, isolated unit tests without requiring external services.
+**Note:** Unit tests use mocks (sqlmock, miniredis) for database and cache dependencies. This provides fast, isolated tests without requiring external services.
 
-### Future Test Plans
-Integration and E2E tests with real PostgreSQL/Redis instances are planned for future releases to validate:
-- Complete request flow through all layers
-- Read-Through caching behavior with actual Redis
-- Database transactions and constraints
-- Docker Compose deployment scenarios
+### Integration Tests
+Integration tests validate system behavior with real PostgreSQL and Redis instances using testcontainers-go.
 
-See tracking issue for integration test implementation progress.
+**Prerequisites:**
+- Docker must be running
+- For Rancher Desktop users: set `DOCKER_HOST=unix://$HOME/.rd/docker.sock`
+
+**Run integration tests:**
+```bash
+# Run integration tests only (requires Docker)
+go test -tags=integration -v ./internal/shortener/
+
+# For Rancher Desktop users
+DOCKER_HOST=unix://$HOME/.rd/docker.sock \
+TESTCONTAINERS_RYUK_DISABLED=true \
+go test -tags=integration -v ./internal/shortener/
+```
