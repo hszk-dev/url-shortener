@@ -45,8 +45,21 @@ It focuses on high code quality, robust system design, and clear documentation s
 ## 📝 Git & GitHub Guidelines (Strict)
 
 ### Branching Strategy
-* `main`: Always deployable.
-* **Rule:** Never commit directly to `main`. Suggest creating feature branches (`feat/...`, `fix/...`).
+* `main`: Always deployable. Protected branch (base for all features).
+* **Rule:** NEVER commit directly to `main`. ALL changes must go through feature branches and Pull Requests.
+* **Branch Naming Convention:**
+  - `feat/*`: New features (e.g., `feat/user-auth`)
+  - `fix/*`: Bug fixes (e.g., `fix/cache-race-condition`)
+  - `test/*`: Test additions/improvements
+  - `ci/*`: CI/CD pipeline changes
+  - `docs/*`: Documentation updates
+  - `refactor/*`: Code refactoring without behavior change
+* **Workflow:**
+  1. Create feature branch from `main`
+  2. Commit changes with proper commit messages
+  3. Push branch and create Pull Request
+  4. After review/approval, merge to `main` (squash or merge commit)
+  5. Delete feature branch after merge
 
 ### Commit Messages (The 50/72 Rule)
 **MANDATORY Format:**
