@@ -3,9 +3,12 @@ package shortener
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/alicebob/miniredis/v2"
+	"github.com/redis/go-redis/v9"
 )
 
 func TestPostgresRedisRepository_Save(t *testing.T) {
@@ -77,37 +80,73 @@ func TestPostgresRedisRepository_Save(t *testing.T) {
 }
 
 func TestPostgresRedisRepository_Get_CacheHit(t *testing.T) {
-	// Create mock Redis client using miniredis
-	db, _, err := sqlmock.New()
+	mr := miniredis.RunT(t)
+	redisClient := redis.NewClient(&redis.Options{
+		Addr: mr.Addr(),
+	})
+	defer redisClient.Close()
+
+	db, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("failed to create mock: %v", err)
 	}
 	defer db.Close()
 
-	// For this test, we'll verify cache behavior conceptually
-	// In a real integration test, you'd use miniredis or testcontainers
-	t.Run("cache hit scenario", func(t *testing.T) {
-		// This is a conceptual test showing the cache hit logic
-		// In production, you'd use miniredis for full integration testing
-		ctx := context.Background()
-		id := uint64(1)
-		expectedURL := "https://www.google.com"
+	tests := []struct {
+		name        string
+		id          uint64
+		cachedURL   string
+		expectQuery bool
+	}{
+		{
+			name:        "cache hit - no DB query",
+			id:          1,
+			cachedURL:   "https://www.google.com",
+			expectQuery: false,
+		},
+		{
+			name:        "cache hit with different URL",
+			id:          42,
+			cachedURL:   "https://github.com",
+			expectQuery: false,
+		},
+	}
 
-		// The Get method should:
-		// 1. Check Redis first
-		// 2. If found, return immediately (no DB query)
-		// 3. If not found, query DB and populate cache
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Pre-populate Redis cache
+			cacheKey := fmt.Sprintf("shorturl:id:%d", tt.id)
+			mr.Set(cacheKey, tt.cachedURL)
 
-		// Mock verification would check that:
-		// - Redis GET is called with "url:1"
-		// - If cache hit, DB query is NOT executed
-		// - If cache miss, DB query IS executed and Redis SET is called
+			// Expect NO database queries (cache hit)
+			// sqlmock will fail if any unexpected query is executed
 
-		_ = ctx
-		_ = id
-		_ = expectedURL
-		// Actual implementation would use miniredis here
-	})
+			repo := &PostgresRedisRepository{
+				db:    db,
+				redis: redisClient,
+			}
+
+			ctx := context.Background()
+			gotURL, err := repo.Get(ctx, tt.id)
+
+			if err != nil {
+				t.Errorf("Get() unexpected error = %v", err)
+				return
+			}
+
+			if gotURL != tt.cachedURL {
+				t.Errorf("Get() = %s, want %s", gotURL, tt.cachedURL)
+			}
+
+			// Verify no DB queries were executed
+			if err := mock.ExpectationsWereMet(); err != nil {
+				t.Errorf("unfulfilled expectations: %v", err)
+			}
+
+			// Clean up cache for next test
+			mr.Del(cacheKey)
+		})
+	}
 }
 
 func TestPostgresRedisRepository_Get_CacheMiss(t *testing.T) {
