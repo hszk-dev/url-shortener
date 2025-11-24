@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log"
+	"os"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -21,14 +23,16 @@ type Repository interface {
 }
 
 type PostgresRedisRepository struct {
-	db    *sql.DB
-	redis *redis.Client
+	db     *sql.DB
+	redis  *redis.Client
+	logger *log.Logger
 }
 
 func NewPostgresRedisRepository(db *sql.DB, redisClient *redis.Client) *PostgresRedisRepository {
 	return &PostgresRedisRepository{
-		db:    db,
-		redis: redisClient,
+		db:     db,
+		redis:  redisClient,
+		logger: log.New(os.Stderr, "[repository] ", log.LstdFlags),
 	}
 }
 
@@ -45,8 +49,24 @@ func (r *PostgresRedisRepository) Save(ctx context.Context, originalURL string) 
 	return id, nil
 }
 
+// Get retrieves the original URL for a given ID using Read-Through caching.
+//
+// The caller should set an appropriate timeout on ctx. Recommended: 3-5 seconds.
+// This allows time for Redis lookup (~100ms) and DB query (~3s) with buffer for retries.
+//
+// Example:
+//
+//	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+//	defer cancel()
+//	url, err := repo.Get(ctx, id)
+//
+// Performance: Redis cache hit returns in <1ms. Cache miss requires DB query (~10-50ms).
+//
+// Future Improvement: Consider using golang.org/x/sync/singleflight to prevent
+// cache stampede (multiple concurrent requests for the same expired cache entry
+// all hitting the database simultaneously).
 func (r *PostgresRedisRepository) Get(ctx context.Context, id uint64) (string, error) {
-	cacheKey := fmt.Sprintf("url:%d", id)
+	cacheKey := fmt.Sprintf("shorturl:id:%d", id)
 
 	// 1. Check Redis (Read-Through Cache) - skip if redis is nil (e.g., in tests)
 	if r.redis != nil {
@@ -55,8 +75,8 @@ func (r *PostgresRedisRepository) Get(ctx context.Context, id uint64) (string, e
 			return val, nil // Cache Hit
 		}
 		if err != redis.Nil {
-			// Log error but proceed to DB
-			fmt.Printf("redis error: %v\n", err)
+			// Log error but proceed to DB (graceful degradation)
+			r.logger.Printf("redis get failed for key=%s: %v", cacheKey, err)
 		}
 	}
 
@@ -68,21 +88,44 @@ func (r *PostgresRedisRepository) Get(ctx context.Context, id uint64) (string, e
 		return "", ErrNotFound
 	}
 	if err != nil {
-		return "", fmt.Errorf("failed to get url from db: %w", err)
+		return "", fmt.Errorf("failed to get url for id %d: %w", id, err)
 	}
 
 	// 3. Update Redis - skip if redis is nil
 	if r.redis != nil {
-		// Set with expiration (e.g., 24 hours) to manage memory
+		// Set with expiration (24 hours) to manage memory with LRU eviction
 		err = r.redis.Set(ctx, cacheKey, originalURL, 24*time.Hour).Err()
 		if err != nil {
-			fmt.Printf("failed to set cache: %v\n", err)
+			r.logger.Printf("redis set failed for key=%s: %v", cacheKey, err)
 		}
 	}
 
 	return originalURL, nil
 }
 
+// Close closes both database and Redis connections.
+// Returns an error if either close operation fails.
 func (r *PostgresRedisRepository) Close() error {
-	return r.db.Close()
+	var dbErr, redisErr error
+
+	if r.db != nil {
+		dbErr = r.db.Close()
+	}
+
+	if r.redis != nil {
+		redisErr = r.redis.Close()
+	}
+
+	// Return first error encountered, or combine errors if both fail
+	if dbErr != nil && redisErr != nil {
+		return fmt.Errorf("failed to close connections: db=%v, redis=%v", dbErr, redisErr)
+	}
+	if dbErr != nil {
+		return fmt.Errorf("failed to close database: %w", dbErr)
+	}
+	if redisErr != nil {
+		return fmt.Errorf("failed to close redis: %w", redisErr)
+	}
+
+	return nil
 }
