@@ -1,0 +1,7 @@
+CREATE TABLE IF NOT EXISTS urls (
+    id BIGSERIAL PRIMARY KEY,
+    original_url TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_urls_original_url ON urls(original_url);
