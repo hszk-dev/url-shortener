@@ -90,7 +90,7 @@ func TestService_Shorten(t *testing.T) {
 				return
 			}
 
-			if gotCode != tt.wantCode {
+			if !tt.wantErr && gotCode != tt.wantCode {
 				t.Errorf("Shorten() = %s, want %s", gotCode, tt.wantCode)
 			}
 		})
@@ -158,7 +158,7 @@ func TestService_Redirect(t *testing.T) {
 				return
 			}
 
-			if gotURL != tt.wantURL {
+			if !tt.wantErr && gotURL != tt.wantURL {
 				t.Errorf("Redirect() = %s, want %s", gotURL, tt.wantURL)
 			}
 		})

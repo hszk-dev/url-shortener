@@ -31,7 +31,7 @@ func TestPostgresRedisRepository_Save(t *testing.T) {
 			wantID:      1,
 			setupMock: func(m sqlmock.Sqlmock) {
 				rows := sqlmock.NewRows([]string{"id"}).AddRow(1)
-				m.ExpectQuery("INSERT INTO urls").
+				m.ExpectQuery(`INSERT INTO urls \(original_url\) VALUES \(\$1\) RETURNING id`).
 					WithArgs("https://www.google.com").
 					WillReturnRows(rows)
 			},
@@ -42,7 +42,7 @@ func TestPostgresRedisRepository_Save(t *testing.T) {
 			originalURL: "https://example.com",
 			wantID:      0,
 			setupMock: func(m sqlmock.Sqlmock) {
-				m.ExpectQuery("INSERT INTO urls").
+				m.ExpectQuery(`INSERT INTO urls \(original_url\) VALUES \(\$1\) RETURNING id`).
 					WithArgs("https://example.com").
 					WillReturnError(sql.ErrConnDone)
 			},
@@ -169,7 +169,7 @@ func TestPostgresRedisRepository_Get_CacheMiss(t *testing.T) {
 			setupMock: func(m sqlmock.Sqlmock) {
 				rows := sqlmock.NewRows([]string{"original_url"}).
 					AddRow("https://www.google.com")
-				m.ExpectQuery("SELECT original_url FROM urls WHERE id").
+				m.ExpectQuery(`SELECT original_url FROM urls WHERE id = \$1`).
 					WithArgs(int64(1)).
 					WillReturnRows(rows)
 			},
@@ -180,7 +180,7 @@ func TestPostgresRedisRepository_Get_CacheMiss(t *testing.T) {
 			name: "URL not found in database",
 			id:   999,
 			setupMock: func(m sqlmock.Sqlmock) {
-				m.ExpectQuery("SELECT original_url FROM urls WHERE id").
+				m.ExpectQuery(`SELECT original_url FROM urls WHERE id = \$1`).
 					WithArgs(int64(999)).
 					WillReturnError(sql.ErrNoRows)
 			},
