@@ -81,14 +81,14 @@ jobs:
       run: go mod download
 
     - name: Start services
-      run: docker-compose up -d
+      run: docker compose up -d
 
     - name: Wait for services to be ready
       run: |
         echo "Waiting for services to start..."
         timeout 60 sh -c 'until curl -f http://localhost:8080/health; do sleep 2; done' || {
           echo "Service failed to start. Checking logs..."
-          docker-compose logs
+          docker compose logs
           exit 1
         }
 
@@ -98,4 +98,4 @@ jobs:
 
     - name: Stop services
       if: always()
-      run: docker-compose down -v
+      run: docker compose down -v
