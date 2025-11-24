@@ -8,33 +8,9 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  unit-tests:
+    name: Unit Tests
     runs-on: ubuntu-latest
-    # Note: PostgreSQL and Redis services are provisioned for future integration tests.
-    # Current tests use mocks (sqlmock, miniredis) and do not require these services.
-    services:
-      postgres:
-        image: postgres:15-alpine
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: password
-          POSTGRES_DB: shortener
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
 
     steps:
     - uses: actions/checkout@v4
@@ -57,16 +33,8 @@ jobs:
     - name: Build
       run: go build -v ./...
 
-    - name: Test
+    - name: Run unit tests
       timeout-minutes: 10
-      env:
-        DB_HOST: localhost
-        DB_PORT: 5432
-        DB_USER: postgres
-        DB_PASSWORD: password
-        DB_NAME: shortener
-        DB_SSLMODE: disable
-        REDIS_ADDR: localhost:6379
       run: go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
 
     - name: Upload coverage to Codecov
@@ -75,3 +43,59 @@ jobs:
         file: ./coverage.out
         flags: unittests
         name: codecov-umbrella
+
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.24'
+        cache: true
+
+    - name: Install dependencies
+      run: go mod download
+
+    - name: Run integration tests
+      timeout-minutes: 10
+      run: go test -tags=integration -v ./internal/shortener/
+
+  e2e-tests:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.24'
+        cache: true
+
+    - name: Install dependencies
+      run: go mod download
+
+    - name: Start services
+      run: docker compose up -d
+
+    - name: Wait for services to be ready
+      run: |
+        echo "Waiting for services to start..."
+        timeout 60 sh -c 'until curl -f http://localhost:8080/health; do sleep 2; done' || {
+          echo "Service failed to start. Checking logs..."
+          docker compose logs
+          exit 1
+        }
+
+    - name: Run E2E tests
+      timeout-minutes: 5
+      run: go test -tags=e2e -v ./tests/
+
+    - name: Stop services
+      if: always()
+      run: docker compose down -v

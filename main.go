@@ -164,6 +164,15 @@ func main() {
 
 	// Setup Router
 	r := mux.NewRouter()
+
+	// Health check endpoint (must be defined before /{shortCode})
+	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		if _, err := w.Write([]byte("OK")); err != nil {
+			log.Printf("Failed to write health check response: %v", err)
+		}
+	}).Methods("GET")
+
 	r.HandleFunc("/api/shorten", app.ShortenHandler).Methods("POST")
 	r.HandleFunc("/{shortCode}", app.RedirectHandler).Methods("GET")
 
