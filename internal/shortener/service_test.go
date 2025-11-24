@@ -48,7 +48,7 @@ func TestService_Shorten(t *testing.T) {
 			originalURL: "https://www.google.com",
 			savedID:     1,
 			saveError:   nil,
-			wantCode:    "b",
+			wantCode:    "1",
 			wantErr:     false,
 		},
 		{
@@ -64,7 +64,7 @@ func TestService_Shorten(t *testing.T) {
 			originalURL: "https://github.com",
 			savedID:     12345,
 			saveError:   nil,
-			wantCode:    "dnh",
+			wantCode:    "3d7",
 			wantErr:     false,
 		},
 	}
