@@ -17,7 +17,7 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/redis/go-redis/v9"
 	httpSwagger "github.com/swaggo/http-swagger"
-	"github.com/suzukikyou/url-shortener/internal/shortener"
+	"github.com/hszk-dev/url-shortener/internal/shortener"
 )
 
 type App struct {
