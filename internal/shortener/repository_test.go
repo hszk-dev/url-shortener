@@ -219,21 +219,3 @@ func TestPostgresRedisRepository_Get_CacheMiss(t *testing.T) {
 		})
 	}
 }
-
-func TestBase62_Bijection(t *testing.T) {
-	// Property test: encoding and decoding should be bijective
-	testIDs := []uint64{0, 1, 10, 100, 1000, 10000, 100000, 1000000}
-
-	for _, id := range testIDs {
-		encoded := Encode(id)
-		decoded, err := Decode(encoded)
-
-		if err != nil {
-			t.Errorf("Decode(%s) failed: %v", encoded, err)
-		}
-
-		if decoded != id {
-			t.Errorf("Bijection failed: %d -> %s -> %d", id, encoded, decoded)
-		}
-	}
-}

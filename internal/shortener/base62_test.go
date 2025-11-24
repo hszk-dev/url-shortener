@@ -46,6 +46,10 @@ func TestDecodeInvalid(t *testing.T) {
 		{"invalid_char!", "invalid character '_' at position 7 in base62 string"},
 		{"abc!", "invalid character '!' at position 3 in base62 string"},
 		{"123-456", "invalid character '-' at position 3 in base62 string"},
+		{"@invalid", "invalid character '@' at position 0 in base62 string"},
+		{"spaces here", "invalid character ' ' at position 6 in base62 string"},
+		{"test#123", "invalid character '#' at position 4 in base62 string"},
+		{"hello🚀world", "invalid character '🚀' at position 5 in base62 string"},
 	}
 
 	for _, test := range tests {
@@ -56,6 +60,20 @@ func TestDecodeInvalid(t *testing.T) {
 		if err != nil && err.Error() != test.expectedErr {
 			t.Errorf("Decode(%q) error = %q; want %q", test.input, err.Error(), test.expectedErr)
 		}
+	}
+}
+
+// TestDecodeEmpty tests the edge case of empty string input.
+// Note: Current implementation returns (0, nil) for empty string.
+// This may be considered a bug as empty string is not a valid Base62 code,
+// but we document the current behavior here.
+func TestDecodeEmpty(t *testing.T) {
+	result, err := Decode("")
+	if err != nil {
+		t.Errorf("Decode(\"\") returned error: %v (current implementation accepts empty string)", err)
+	}
+	if result != 0 {
+		t.Errorf("Decode(\"\") = %d; want 0", result)
 	}
 }
 

@@ -67,6 +67,22 @@ func TestService_Shorten(t *testing.T) {
 			wantCode:    "3d7",
 			wantErr:     false,
 		},
+		{
+			name:        "empty URL string",
+			originalURL: "",
+			savedID:     42,
+			saveError:   nil,
+			wantCode:    "G",
+			wantErr:     false,
+		},
+		{
+			name:        "very long URL",
+			originalURL: "https://example.com/" + string(make([]byte, 10000)),
+			savedID:     999,
+			saveError:   nil,
+			wantCode:    "g7",
+			wantErr:     false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -104,7 +120,7 @@ func TestService_Redirect(t *testing.T) {
 		storedURL   string
 		getError    error
 		wantURL     string
-		wantErr     bool
+		wantErr     error
 	}{
 		{
 			name:      "successful redirect",
@@ -112,7 +128,7 @@ func TestService_Redirect(t *testing.T) {
 			storedURL: "https://www.google.com",
 			getError:  nil,
 			wantURL:   "https://www.google.com",
-			wantErr:   false,
+			wantErr:   nil,
 		},
 		{
 			name:      "URL not found",
@@ -120,7 +136,7 @@ func TestService_Redirect(t *testing.T) {
 			storedURL: "",
 			getError:  ErrNotFound,
 			wantURL:   "",
-			wantErr:   true,
+			wantErr:   ErrNotFound,
 		},
 		{
 			name:      "invalid short code",
@@ -128,7 +144,7 @@ func TestService_Redirect(t *testing.T) {
 			storedURL: "",
 			getError:  nil,
 			wantURL:   "",
-			wantErr:   true,
+			wantErr:   ErrInvalidShortCode,
 		},
 		{
 			name:      "repository error",
@@ -136,7 +152,23 @@ func TestService_Redirect(t *testing.T) {
 			storedURL: "",
 			getError:  errors.New("database connection error"),
 			wantURL:   "",
-			wantErr:   true,
+			wantErr:   errors.New("database connection error"),
+		},
+		{
+			name:      "empty short code",
+			shortCode: "",
+			storedURL: "",
+			getError:  ErrNotFound,
+			wantURL:   "",
+			wantErr:   ErrNotFound,
+		},
+		{
+			name:      "very long short code",
+			shortCode: string(make([]byte, 1000)),
+			storedURL: "",
+			getError:  nil,
+			wantURL:   "",
+			wantErr:   ErrInvalidShortCode,
 		},
 	}
 
@@ -153,12 +185,21 @@ func TestService_Redirect(t *testing.T) {
 
 			gotURL, err := service.Redirect(ctx, tt.shortCode)
 
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Redirect() error = %v, wantErr %v", err, tt.wantErr)
+			if tt.wantErr != nil {
+				if err == nil {
+					t.Errorf("Redirect() expected error, got nil")
+					return
+				}
+				if !errors.Is(err, tt.wantErr) && err.Error() != tt.wantErr.Error() {
+					t.Errorf("Redirect() error = %v, want %v", err, tt.wantErr)
+					return
+				}
+			} else if err != nil {
+				t.Errorf("Redirect() unexpected error = %v", err)
 				return
 			}
 
-			if !tt.wantErr && gotURL != tt.wantURL {
+			if err == nil && gotURL != tt.wantURL {
 				t.Errorf("Redirect() = %s, want %s", gotURL, tt.wantURL)
 			}
 		})
