@@ -168,7 +168,9 @@ func main() {
 	// Health check endpoint (must be defined before /{shortCode})
 	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("OK"))
+		if _, err := w.Write([]byte("OK")); err != nil {
+			log.Printf("Failed to write health check response: %v", err)
+		}
 	}).Methods("GET")
 
 	r.HandleFunc("/api/shorten", app.ShortenHandler).Methods("POST")
