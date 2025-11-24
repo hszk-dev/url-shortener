@@ -123,6 +123,15 @@ I have prepared a comprehensive guide for System Design Interview questions rela
    curl -X POST http://localhost:8080/api/shorten -d '{"url": "https://www.google.com"}'
    ```
 
+## 📚 API Documentation
+
+Interactive **Swagger UI** is available at:
+```
+http://localhost:8080/docs/
+```
+
+**OpenAPI Specification:** Available at `/docs/swagger.yaml` for integration with API clients and code generators.
+
 ## 🧪 Running Tests
 
 ### Unit Tests
