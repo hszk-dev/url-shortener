@@ -44,6 +44,23 @@ It focuses on high code quality, robust system design, and clear documentation s
 
 ## 📝 Git & GitHub Guidelines (Strict)
 
+### Workflow: Tracking Issue for Major Milestones
+
+**For Individual Development:** Use **Tracking Issues** to manage major features or releases without creating excessive granular issues.
+
+**When to Create a Tracking Issue:**
+- ✅ Major feature sets spanning multiple PRs (e.g., "Initial Release v1.0")
+- ✅ Large refactoring efforts across multiple layers
+- ✅ Coordinated changes requiring multiple PRs
+- ❌ Small bug fixes or single-PR features (just create PR directly)
+
+**How to Use:**
+1.  **Create Tracking Issue** using `.github/ISSUE_TEMPLATE/tracking_issue.md`
+2.  **List PRs** with task list format: `- [ ] #PR_NUMBER description`
+3.  **Reference in PRs** with `Part of #<issue-number>` (NOT `Closes #<issue>`)
+4.  **Track Progress** - GitHub shows `X of Y tasks completed`
+5.  **Close Manually** when all PRs are merged
+
 ### Branching Strategy
 * `main`: Always deployable. Protected branch (base for all features).
 * **Rule:** NEVER commit directly to `main`. ALL changes must go through feature branches and Pull Requests.
@@ -81,12 +98,9 @@ It focuses on high code quality, robust system design, and clear documentation s
     - **Summary:** Brief overview of changes
     - **Motivation & Context (Why?):** Explain the problem being solved and why this change is necessary
     - **Implementation Details (How?):** High-level technical approach and key architectural decisions
-    - **How to Test:** Step-by-step verification instructions
-    - **Checklist:** Complete all items before requesting review
 
 **Quality Standards:**
   * Focus on **WHY** (motivation) over **WHAT** (code changes)
-  * Include concrete testing steps, not just "tested locally"
   * Highlight trade-offs and technical decisions made
   * Self-review before requesting review from others
 
