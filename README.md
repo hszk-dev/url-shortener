@@ -61,7 +61,7 @@ Benchmarked with **k6** on local Docker environment (MacBook Pro, macOS 15).
 - **Workload Pattern:** Read-Heavy (90% reads, 10% writes)
 - **Virtual Users:** 100 concurrent users
 - **Duration:** 2 minutes (30s ramp-up, 1m sustained, 30s ramp-down)
-- **Test Data:** 100 pre-populated URLs for cache validation
+- **Test Data:** 100 pre-populated URLs for read operations
 
 ### Results
 
@@ -73,29 +73,23 @@ Benchmarked with **k6** on local Docker environment (MacBook Pro, macOS 15).
 | **Error Rate** | 0.00% | <1% | ✅ |
 | **Read Operations** | 53,525 (90%) | - | ✅ |
 | **Write Operations** | 6,013 (10%) | - | ✅ |
-| **Cache Hit Ratio** | **99.6%** | - | ✅ |
 | **Read Latency (p95)** | 2ms | <10ms | ✅ |
 | **Write Latency (p99)** | 6ms | <100ms | ✅ |
 | **HTTP Duration (p99)** | 3.55ms | <100ms | ✅ |
 
 ### Key Observations
 
-1. **Read-Through Caching Effectiveness:**
-   - 99.6% cache hit ratio (53,299 / 53,525 reads)
-   - Cache hits served in **sub-millisecond latency** from Redis
-   - Only 226 cache misses required PostgreSQL queries
-
-2. **Base62 Encoding Efficiency:**
+1. **Base62 Encoding Efficiency:**
    - O(1) write operations with auto-increment IDs
    - Zero collision checks required
    - Consistent 6ms p99 write latency
 
-3. **Concurrency Handling:**
+2. **Concurrency Handling:**
    - 100 concurrent users with zero errors
    - Stable performance across 2-minute test duration
    - No race conditions or timeout issues
 
-**Benchmarked with k6: Handled 490 req/sec with <4ms p99 latency and 99.6% cache hit ratio.**
+**Benchmarked with k6: Handled 490 req/sec with <4ms p99 latency.**
 
 *(Note: Production performance on optimized cloud infrastructure would scale linearly with resources.)*
 

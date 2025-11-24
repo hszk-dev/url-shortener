@@ -3,8 +3,6 @@ import { check, sleep } from 'k6';
 import { Counter, Rate, Trend } from 'k6/metrics';
 
 // Custom metrics for detailed analysis
-const cacheHits = new Counter('cache_hits');
-const cacheMisses = new Counter('cache_misses');
 const writeLatency = new Trend('write_latency_ms');
 const readLatency = new Trend('read_latency_ms');
 const errorRate = new Rate('error_rate');
@@ -19,7 +17,7 @@ export const options = {
     ],
     thresholds: {
         http_req_duration: ['p(99)<100'],      // 99% of requests < 100ms
-        'read_latency_ms': ['p(95)<10'],       // 95% of reads < 10ms (cache hits)
+        'read_latency_ms': ['p(95)<10'],       // 95% of reads < 10ms
         'write_latency_ms': ['p(99)<100'],     // 99% of writes < 100ms
         'error_rate': ['rate<0.01'],           // Error rate < 1%
         'http_req_failed': ['rate<0.01'],      // Failed requests < 1%
@@ -36,7 +34,7 @@ export function setup() {
         headers: { 'Content-Type': 'application/json' },
     };
 
-    // Create 100 initial URLs for cache testing
+    // Create 100 initial URLs for read operations
     for (let i = 0; i < 100; i++) {
         const payload = JSON.stringify({
             url: `https://example.com/setup/${i}`,
@@ -140,14 +138,6 @@ export default function (data) {
         });
 
         errorRate.add(!success);
-
-        // Estimate cache hit/miss based on latency
-        // Cache hits (Redis) should be <5ms, DB queries are typically >10ms
-        if (duration < 5) {
-            cacheHits.add(1);
-        } else {
-            cacheMisses.add(1);
-        }
 
         if (!success) {
             console.error(`Read failed: ${redirectRes.status} - ${redirectRes.body}`);
