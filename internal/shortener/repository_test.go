@@ -116,7 +116,9 @@ func TestPostgresRedisRepository_Get_CacheHit(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Pre-populate Redis cache
 			cacheKey := fmt.Sprintf("shorturl:id:%d", tt.id)
-			mr.Set(cacheKey, tt.cachedURL)
+			if err := mr.Set(cacheKey, tt.cachedURL); err != nil {
+				t.Fatalf("Failed to setup test cache: %v", err)
+			}
 
 			// Expect NO database queries (cache hit)
 			// sqlmock will fail if any unexpected query is executed

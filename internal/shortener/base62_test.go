@@ -101,6 +101,6 @@ func BenchmarkDecode(b *testing.B) {
 	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		Decode(codes[i%len(codes)])
+		_, _ = Decode(codes[i%len(codes)])
 	}
 }

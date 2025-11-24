@@ -73,8 +73,18 @@ func (a *App) ShortenHandler(w http.ResponseWriter, r *http.Request) {
 		ShortURL:  fmt.Sprintf("%s/%s", a.BaseURL, shortCode),
 	}
 
+	// Marshal to JSON before writing headers to catch encoding errors
+	respJSON, err := json.Marshal(resp)
+	if err != nil {
+		log.Printf("Failed to encode response: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp)
+	if _, err := w.Write(respJSON); err != nil {
+		log.Printf("Failed to write response: %v", err)
+	}
 }
 
 func (a *App) RedirectHandler(w http.ResponseWriter, r *http.Request) {
@@ -110,8 +120,10 @@ func (a *App) RedirectHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	// Load .env
-	_ = godotenv.Load()
+	// Load .env (optional in CI/production environments)
+	if err := godotenv.Load(); err != nil {
+		log.Printf("Warning: .env file not found (using environment variables): %v", err)
+	}
 
 	// Connect to PostgreSQL
 	dbHost := os.Getenv("DB_HOST")
