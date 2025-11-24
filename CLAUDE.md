@@ -84,7 +84,7 @@ It focuses on high code quality, robust system design, and clear documentation s
 <type>: <subject (50 chars max, imperative mood)>
 
 <body (wrap at 72 chars, explain WHY not HOW)>
-````
+```
 
   * **Imperative Mood:** "Add feature" (not "Added").
   * **Granularity:** Atomic commits. One logical change per commit.
