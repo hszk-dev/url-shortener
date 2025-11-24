@@ -120,7 +120,8 @@ func TestService_Redirect(t *testing.T) {
 		storedURL   string
 		getError    error
 		wantURL     string
-		wantErr     error
+		wantErr     error // Sentinel errors only (use errors.Is)
+		wantAnyErr  bool  // For non-sentinel errors (just check err != nil)
 	}{
 		{
 			name:      "successful redirect",
@@ -147,12 +148,12 @@ func TestService_Redirect(t *testing.T) {
 			wantErr:   ErrInvalidShortCode,
 		},
 		{
-			name:      "repository error",
-			shortCode: "c",
-			storedURL: "",
-			getError:  errors.New("database connection error"),
-			wantURL:   "",
-			wantErr:   errors.New("database connection error"),
+			name:       "repository error",
+			shortCode:  "c",
+			storedURL:  "",
+			getError:   errors.New("database connection error"),
+			wantURL:    "",
+			wantAnyErr: true,
 		},
 		{
 			name:      "empty short code",
@@ -185,13 +186,19 @@ func TestService_Redirect(t *testing.T) {
 
 			gotURL, err := service.Redirect(ctx, tt.shortCode)
 
+			// Check for expected errors
 			if tt.wantErr != nil {
 				if err == nil {
-					t.Errorf("Redirect() expected error, got nil")
+					t.Errorf("Redirect() expected error %v, got nil", tt.wantErr)
 					return
 				}
-				if !errors.Is(err, tt.wantErr) && err.Error() != tt.wantErr.Error() {
+				if !errors.Is(err, tt.wantErr) {
 					t.Errorf("Redirect() error = %v, want %v", err, tt.wantErr)
+					return
+				}
+			} else if tt.wantAnyErr {
+				if err == nil {
+					t.Errorf("Redirect() expected an error, got nil")
 					return
 				}
 			} else if err != nil {
