@@ -10,6 +10,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # Note: PostgreSQL and Redis services are provisioned for future integration tests.
+    # Current tests use mocks (sqlmock, miniredis) and do not require these services.
     services:
       postgres:
         image: postgres:15-alpine
@@ -66,6 +68,7 @@ jobs:
         DB_USER: postgres
         DB_PASSWORD: password
         DB_NAME: shortener
+        DB_SSLMODE: disable
         REDIS_ADDR: localhost:6379
       run: go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
 

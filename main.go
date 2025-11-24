@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"encoding/json"
@@ -73,9 +74,17 @@ func (a *App) ShortenHandler(w http.ResponseWriter, r *http.Request) {
 		ShortURL:  fmt.Sprintf("%s/%s", a.BaseURL, shortCode),
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(resp); err != nil {
+	// Encode to buffer first to catch encoding errors before writing headers
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(resp); err != nil {
 		log.Printf("Failed to encode response: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if _, err := w.Write(buf.Bytes()); err != nil {
+		log.Printf("Failed to write response: %v", err)
 	}
 }
 

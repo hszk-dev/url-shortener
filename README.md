@@ -2,13 +2,6 @@
 
 A scalable, production-ready URL shortening service built with Go, PostgreSQL, and Redis. Designed to handle high read throughput with low latency redirection, demonstrating modern system design principles.
 
-## 🚀 Demo
-
-![Demo GIF](https://via.placeholder.com/800x400?text=Demo+GIF+Placeholder)
-*(Replace this with an actual GIF of the application in action)*
-
-**Live Demo:** [https://your-demo-url.com](https://your-demo-url.com)
-
 ## 🛠 Tech Stack
 
 - **Language:** Go (Golang)
@@ -83,7 +76,7 @@ I have prepared a comprehensive guide for System Design Interview questions rela
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/url-shortener.git
+   git clone https://github.com/hszk-dev/url-shortener.git
    cd url-shortener
    ```
 
@@ -100,6 +93,31 @@ I have prepared a comprehensive guide for System Design Interview questions rela
 
 ## 🧪 Running Tests
 
+### Unit Tests
+Current test coverage includes unit tests for all core components:
+- **Business Logic:** Service layer with mock repositories
+- **Data Layer:** Repository layer with sqlmock and miniredis
+- **HTTP Handlers:** Request/response handling with httptest
+- **Utilities:** Base62 encoding/decoding
+
 ```bash
+# Run all tests
 go test ./...
+
+# Run with coverage
+go test -v -race -coverprofile=coverage.out ./...
+
+# View coverage report
+go tool cover -html=coverage.out
 ```
+
+**Note:** Current tests use mocks (sqlmock, miniredis) for database and cache dependencies. This provides fast, isolated unit tests without requiring external services.
+
+### Future Test Plans
+Integration and E2E tests with real PostgreSQL/Redis instances are planned for future releases to validate:
+- Complete request flow through all layers
+- Read-Through caching behavior with actual Redis
+- Database transactions and constraints
+- Docker Compose deployment scenarios
+
+See tracking issue for integration test implementation progress.
