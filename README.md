@@ -171,3 +171,25 @@ DOCKER_HOST=unix://$HOME/.rd/docker.sock \
 TESTCONTAINERS_RYUK_DISABLED=true \
 go test -tags=integration -v ./internal/shortener/
 ```
+
+### E2E Tests
+End-to-End tests validate the complete HTTP request flow in a deployed environment using docker-compose.
+
+**Prerequisites:**
+- Services must be running via docker-compose
+- All services accessible at `localhost:8080`
+
+**Run E2E tests:**
+```bash
+# 1. Start services
+docker-compose up -d
+
+# 2. Wait for services to initialize (check health endpoint)
+curl http://localhost:8080/health
+
+# 3. Run E2E tests
+go test -tags=e2e -v ./tests/
+
+# 4. Cleanup (optional)
+docker-compose down -v
+```
