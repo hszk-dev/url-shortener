@@ -98,16 +98,6 @@ export default function (data) {
 
         if (!success) {
             console.error(`Write failed: ${shortenRes.status} - ${shortenRes.body}`);
-        } else {
-            // Add newly created code to local pool for potential future reads
-            try {
-                const newCode = shortenRes.json('short_code');
-                if (data.shortCodes) {
-                    data.shortCodes.push(newCode);
-                }
-            } catch (e) {
-                console.error(`Failed to parse short_code: ${e}`);
-            }
         }
 
     } else {
