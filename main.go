@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -9,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
@@ -50,8 +52,17 @@ func (a *App) ShortenHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	shortCode, err := a.Service.Shorten(r.Context(), req.URL)
+	// Set timeout for database operations
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+
+	shortCode, err := a.Service.Shorten(ctx, req.URL)
 	if err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			http.Error(w, "Request timeout", http.StatusRequestTimeout)
+			log.Printf("Shorten timeout: %v", err)
+			return
+		}
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		log.Printf("Shorten error: %v", err)
 		return
@@ -70,8 +81,17 @@ func (a *App) RedirectHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	shortCode := vars["shortCode"]
 
-	originalURL, err := a.Service.Redirect(r.Context(), shortCode)
+	// Set timeout for cache/database operations (shorter for redirects)
+	ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
+	defer cancel()
+
+	originalURL, err := a.Service.Redirect(ctx, shortCode)
 	if err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			http.Error(w, "Request timeout", http.StatusRequestTimeout)
+			log.Printf("Redirect timeout for code %s: %v", shortCode, err)
+			return
+		}
 		if errors.Is(err, shortener.ErrInvalidShortCode) {
 			http.Error(w, "Invalid short code", http.StatusBadRequest)
 			return
@@ -134,8 +154,20 @@ func main() {
 	r.HandleFunc("/api/shorten", app.ShortenHandler).Methods("POST")
 	r.HandleFunc("/{shortCode}", app.RedirectHandler).Methods("GET")
 
-	// Start Server
+	// Configure HTTP Server with timeouts
 	port := "8080"
+	srv := &http.Server{
+		Addr:    ":" + port,
+		Handler: r,
+		// ReadTimeout covers the time from connection accepted to request body fully read
+		ReadTimeout: 10 * time.Second,
+		// WriteTimeout covers the time from end of request header read to end of response write
+		WriteTimeout: 10 * time.Second,
+		// IdleTimeout is the max time to wait for the next request when keep-alives are enabled
+		IdleTimeout: 120 * time.Second,
+	}
+
+	// Start Server
 	log.Printf("Server starting on port %s", port)
-	log.Fatal(http.ListenAndServe(":"+port, r))
+	log.Fatal(srv.ListenAndServe())
 }
