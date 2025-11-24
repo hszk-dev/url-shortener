@@ -1,0 +1,63 @@
+openapi: 3.0.0
+info:
+  title: High-Performance URL Shortener API
+  description: A scalable URL shortening service built with Go, PostgreSQL, and Redis.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+    description: Local server
+paths:
+  /api/shorten:
+    post:
+      summary: Shorten a URL
+      description: Accepts a long URL and returns a short code.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                url:
+                  type: string
+                  example: "https://www.google.com"
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  short_code:
+                    type: string
+                    example: "b"
+                  short_url:
+                    type: string
+                    example: "http://localhost:8080/b"
+        '400':
+          description: Invalid input
+        '500':
+          description: Internal server error
+
+  /{shortCode}:
+    get:
+      summary: Redirect to original URL
+      description: Redirects the client to the original URL associated with the short code.
+      parameters:
+        - name: shortCode
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The short code to resolve
+      responses:
+        '302':
+          description: Found (Redirect)
+          headers:
+            Location:
+              schema:
+                type: string
+                description: The original URL
+        '404':
+          description: URL not found
