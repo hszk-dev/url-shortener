@@ -1,12 +1,12 @@
 package shortener
 
 import (
-	"errors"
+	"fmt"
 	"strings"
 )
 
 const (
-	alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	alphabet = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	base     = uint64(len(alphabet))
 )
 
@@ -36,10 +36,10 @@ func Encode(id uint64) string {
 func Decode(encoded string) (uint64, error) {
 	var id uint64
 
-	for _, char := range encoded {
+	for i, char := range encoded {
 		index := strings.IndexRune(alphabet, char)
 		if index == -1 {
-			return 0, errors.New("invalid character in base62 string")
+			return 0, fmt.Errorf("invalid character '%c' at position %d in base62 string", char, i)
 		}
 		id = id*base + uint64(index)
 	}
