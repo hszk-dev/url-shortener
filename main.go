@@ -16,6 +16,7 @@ import (
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	"github.com/redis/go-redis/v9"
+	httpSwagger "github.com/swaggo/http-swagger"
 	"github.com/suzukikyou/url-shortener/internal/shortener"
 )
 
@@ -165,6 +166,14 @@ func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/api/shorten", app.ShortenHandler).Methods("POST")
 	r.HandleFunc("/{shortCode}", app.RedirectHandler).Methods("GET")
+
+	// Swagger UI endpoints
+	r.HandleFunc("/docs/swagger.yaml", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "./docs/swagger.yaml")
+	}).Methods("GET")
+	r.PathPrefix("/docs/").Handler(httpSwagger.Handler(
+		httpSwagger.URL("/docs/swagger.yaml"),
+	))
 
 	// Configure HTTP Server with timeouts
 	port := "8080"
