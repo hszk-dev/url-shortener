@@ -1,0 +1,123 @@
+openapi: 3.0.0
+info:
+  title: High-Performance URL Shortener API
+  description: A scalable URL shortening service built with Go, PostgreSQL, and Redis.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+    description: Local server
+paths:
+  /api/shorten:
+    post:
+      summary: Shorten a URL
+      description: Accepts a long URL and returns a short code.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - url
+              properties:
+                url:
+                  type: string
+                  minLength: 1
+                  pattern: '^https?://.+'
+                  example: "https://www.google.com"
+                  description: "Valid HTTP or HTTPS URL (non-empty)"
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - short_code
+                  - short_url
+                properties:
+                  short_code:
+                    type: string
+                    description: "Base62-encoded short code"
+                    example: "b"
+                  short_url:
+                    type: string
+                    format: uri
+                    description: "Complete shortened URL"
+                    example: "http://localhost:8080/b"
+        '400':
+          description: Invalid input
+          content:
+            text/plain:
+              schema:
+                type: string
+              examples:
+                empty_url:
+                  value: "URL is required\n"
+                  summary: Empty URL
+                invalid_format:
+                  value: "Invalid URL format. Must be http:// or https://\n"
+                  summary: Invalid URL format
+        '408':
+          description: Request timeout
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Request timeout\n"
+        '500':
+          description: Internal server error
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Internal server error\n"
+
+  /{shortCode}:
+    get:
+      summary: Redirect to original URL
+      description: Redirects the client to the original URL associated with the short code.
+      parameters:
+        - name: shortCode
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The short code to resolve
+      responses:
+        '302':
+          description: Found (Redirect)
+          headers:
+            Location:
+              schema:
+                type: string
+                description: The original URL
+        '400':
+          description: Invalid short code
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Invalid short code\n"
+        '404':
+          description: URL not found
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "URL not found\n"
+        '408':
+          description: Request timeout
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Request timeout\n"
+        '500':
+          description: Internal server error
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Internal server error\n"
