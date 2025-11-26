@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	"github.com/gorilla/mux"
-	"github.com/suzukikyou/url-shortener/internal/shortener"
+	"github.com/hszk-dev/url-shortener/internal/shortener"
 )
 
 func TestShortenHandler(t *testing.T) {
